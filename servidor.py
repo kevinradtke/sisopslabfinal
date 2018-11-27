@@ -14,6 +14,7 @@ class Process:
 		self.priority = priority
 		self.initialTime= time.time()
 		self.endTime = -1
+		self.tiempoCPU = 0
 
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
