@@ -8,8 +8,6 @@ import sys
 import time
 import random
 
-#Hola perras
-
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -20,7 +18,6 @@ sock.connect(server_address)
 
 # After the connection is established, data can be sent through the socket with sendall() and received with recv(), just as in
 # the server.
-
 
 #EXPLICACION DE COMANDOS
 
@@ -37,6 +34,10 @@ sock.connect(server_address)
 #Fin pid
 #Mata a proceso con id pid
 #	pid = process id
+
+#End
+#termina los queries
+#Imprimir tiempo de CPU, tiempo de turnaround
 
 
 m = ['Politicas Scheduling PrioEx Memory MFU',\
@@ -77,7 +78,6 @@ try:
 	#simulation parameters
 	for i in range(5):
 		print >> sys.stderr, 'client sending "%s" ' % m[i]
-		print 'AAAA'
 		sock.sendall (m[i])
 		respuesta = sock.recv(256)
 		print >>sys.stderr, 'client received "%s"' % respuesta
