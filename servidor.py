@@ -28,14 +28,40 @@ connection, client_address = sock.accept()
 
 #accept() returns an open connection between the server and client, along with the address of the client. The connection is actually a different socket on another port (assigned by the kernel). Data is read from the connection with recv() and transmitted with sendall().
 
+
 try:
 	print >>sys.stderr, 'connection from', client_address
-
+	counter = -1
+	quantum = 0
+	RealMemory = 0
+	SwapMemory = 0
+	PageSize = 0
     # Receive the data 
 	while True:   
 		data = connection.recv(256)
 		print >>sys.stderr, 'server received "%s"' % data
 		if data:
+			counter = counter + 1
+			if(counter == 1): 
+				InformacionInicial = data.split(' ')
+				quantum = float(InformacionInicial[1])
+				print >> sys.stderr, quantum
+			
+			if(counter == 2): 
+				InformacionInicial = data.split(' ')
+				RealMemory = float(InformacionInicial[1])
+				print >> sys.stderr, RealMemory
+			
+			if(counter == 3): 
+				InformacionInicial = data.split(' ')
+				SwapMemory = float(InformacionInicial[1])
+				print >> sys.stderr, SwapMemory
+
+			if(counter == 4): 
+				InformacionInicial = data.split(' ')
+				PageSize = float(InformacionInicial[1])
+				print >> sys.stderr, PageSize
+			
 			print >>sys.stderr, 'sending answer back to the client'
 	
 			connection.sendall('process created')
