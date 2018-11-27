@@ -7,6 +7,12 @@ import sys
 import time
 from tabulate import tabulate
 
+class Process:
+	def __init__(self, pid, size, priority):
+		self.pid = pid
+		self.size = size
+		self.priority = priority
+
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
