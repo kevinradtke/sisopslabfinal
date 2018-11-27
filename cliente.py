@@ -8,7 +8,7 @@ import sys
 import time
 import random
 
-//Hola perras
+#Hola perras
 
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
