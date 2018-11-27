@@ -15,6 +15,8 @@ class Process:
 		self.initialTime= time.time()
 		self.endTime = -1
 		self.tiempoCPU = 0
+		self.active = True
+
 
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -38,6 +40,9 @@ connection, client_address = sock.accept()
 
 #accept() returns an open connection between the server and client, along with the address of the client. The connection is actually a different socket on another port (assigned by the kernel). Data is read from the connection with recv() and transmitted with sendall().
 
+processes = []
+processes.append(0)
+counterPID = 1
 
 try:
 	print >>sys.stderr, 'connection from', client_address
@@ -77,7 +82,10 @@ try:
 				Instruccion = Queries.split(' ')
 
 				if(Instruccion[0] == 'Create'):
-					print >> sys.stderr, 'Create'
+					p = Process(counterPID, int(Instruccion[1]), int(Instruccion[2]))
+					counterPID = counterPID + 1
+					processes.append(p)
+					print >> sys.stderr, 'Create'	
 				
 				if(Instruccion[0] == 'Address'):
 					print >> sys.stderr, 'Address'
@@ -97,6 +105,9 @@ try:
 finally:
      # Clean up the connection
 	print >>sys.stderr, 'se fue al finally'
+	for p in processes:
+		if(p != 0):
+			print >> sys.stderr, p.pid
 	connection.close()
 
 #When communication with a client is finished, the connection needs to be cleaned up using close(). This example uses a try:finally block to ensure that close() is always called, even in the event of an error.
