@@ -16,6 +16,8 @@ class Process:
 		self.endTime = -1
 		self.tiempoCPU = 0
 		self.active = True
+		self.pageFaults = 1
+		self.pageVisits = 1
 
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -50,28 +52,28 @@ try:
 	RealMemory = 0
 	SwapMemory = 0
 	PageSize = 0
-    # Receive the data 
-	while True:   
+    # Receive the data
+	while True:
 		data = connection.recv(256)
 		print >>sys.stderr, 'server received "%s"' % data
 		if data:
 			counter = counter + 1
-			if(counter == 1): 
+			if(counter == 1):
 				InformacionInicial = data.split(' ')
 				quantum = float(InformacionInicial[1])
 				print >> sys.stderr, quantum
-			
-			if(counter == 2): 
+
+			if(counter == 2):
 				InformacionInicial = data.split(' ')
 				RealMemory = float(InformacionInicial[1])
 				print >> sys.stderr, RealMemory
-			
-			if(counter == 3): 
+
+			if(counter == 3):
 				InformacionInicial = data.split(' ')
 				SwapMemory = float(InformacionInicial[1])
 				print >> sys.stderr, SwapMemory
 
-			if(counter == 4): 
+			if(counter == 4):
 				InformacionInicial = data.split(' ')
 				PageSize = float(InformacionInicial[1])
 				print >> sys.stderr, PageSize
@@ -84,30 +86,60 @@ try:
 					p = Process(counterPID, int(Instruccion[1]), int(Instruccion[2]))
 					counterPID = counterPID + 1
 					processes.append(p)
-					print >> sys.stderr, 'Create'	
-				
+					print >> sys.stderr, 'Create'
+
 				if(Instruccion[0] == 'Address'):
 					print >> sys.stderr, 'Address'
-				
+
 				if(Instruccion[0] == 'Fin'):
 					print >> sys.stderr, 'Fin'
 
 
 			print >>sys.stderr, 'sending answer back to the client'
-	
+
 			connection.sendall('process created')
+
 		else:
 			print >>sys.stderr, 'no data from', client_address
 			connection.close()
 			sys.exit()
-			
+
 finally:
      # Clean up the connection
 	print >>sys.stderr, 'se fue al finally'
+
+#GLOBAL
+#Tiempo de turnaround promedio y tiempo de espera promedio.
+#visitas a páginas, número de page faults y rendimiento
+
+	tableL = []
+	tableG = []
+	turnaroundSum = 0
+	tEsperaSum = 0
+	visitasTot = 1
+	pageFaultsTot = 1
+
 	for p in processes:
 		if(p != 0):
-			print >> sys.stderr, p.pid
+			turnaround = p.endTime-p.initialTime
+			tEspera = turnaround - p.tiempoCPU
+			turnaroundSum += turnaround
+			tEsperaSum += tEspera
+			visitasTot += p.pageVisits
+			pageFaultsTot += p.pageFaults
+			tableL.append([p.pid, p.tiempoCPU, turnaround, turnaround-p.tiempoCPU, p.pageVisits, p.pageFaults, 1-p.pageFaults/p.pageVisits])
+
+	print('')
+	print('DATOS LOCALES PARA CADA PROCESO')
+	print tabulate(tableL, headers=["pid","CPU time", "Turnaround", "t. espera", "# de visitas a pag.", "# de page faults", "rendimiento"])
+
+	tableG.append([turnaroundSum/len(processes), tEsperaSum/len(processes),visitasTot, pageFaultsTot, 1-pageFaultsTot/visitasTot])
+	print('')
+	print('DATOS GLOBALES')
+	print tabulate(tableG, headers=["Turnaround promedio", "t. espera promedio", "# de visitas a pag.", "# de page faults", "rendimiento"])
+
 	connection.close()
+
 
 #When communication with a client is finished, the connection needs to be cleaned up using close(). This example uses a try:finally block to ensure that close() is always called, even in the event of an error.
 
@@ -118,4 +150,3 @@ def main(args):
 if __name__ == '__main__':
     import sys
     sys.exit(main(sys.argv))
-
