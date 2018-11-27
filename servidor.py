@@ -43,40 +43,43 @@ try:
 	RealMemory = 0
 	SwapMemory = 0
 	PageSize = 0
-    # Receive the data 
-	while True:   
+    # Receive the data
+	while True:
 		data = connection.recv(256)
 		print >>sys.stderr, 'server received "%s"' % data
 		if data:
 			counter = counter + 1
-			if(counter == 1): 
+			if(counter == 1):
 				InformacionInicial = data.split(' ')
 				quantum = float(InformacionInicial[1])
 				print >> sys.stderr, quantum
-			
-			if(counter == 2): 
+
+			if(counter == 2):
 				InformacionInicial = data.split(' ')
 				RealMemory = float(InformacionInicial[1])
 				print >> sys.stderr, RealMemory
-			
-			if(counter == 3): 
+
+			if(counter == 3):
 				InformacionInicial = data.split(' ')
 				SwapMemory = float(InformacionInicial[1])
 				print >> sys.stderr, SwapMemory
 
-			if(counter == 4): 
+			if(counter == 4):
 				InformacionInicial = data.split(' ')
 				PageSize = float(InformacionInicial[1])
 				print >> sys.stderr, PageSize
-			
+
+			if (counter > 4):
+				print (data)
+
 			print >>sys.stderr, 'sending answer back to the client'
-	
+
 			connection.sendall('process created')
 		else:
 			print >>sys.stderr, 'no data from', client_address
 			connection.close()
 			sys.exit()
-			
+
 finally:
      # Clean up the connection
 	print >>sys.stderr, 'se fue al finally'
@@ -91,4 +94,3 @@ def main(args):
 if __name__ == '__main__':
     import sys
     sys.exit(main(sys.argv))
-
