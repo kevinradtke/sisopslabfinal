@@ -12,6 +12,8 @@ class Process:
 		self.pid = pid
 		self.size = size
 		self.priority = priority
+		self.initialTime= time.time()
+		self.endTime = -1
 
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -68,7 +70,21 @@ try:
 				InformacionInicial = data.split(' ')
 				PageSize = float(InformacionInicial[1])
 				print >> sys.stderr, PageSize
-			
+
+			if(counter > 4):
+				Queries = data
+				Instruccion = Queries.split(' ')
+
+				if(Instruccion[0] == 'Create'):
+					print >> sys.stderr, 'Create'
+				
+				if(Instruccion[0] == 'Address'):
+					print >> sys.stderr, 'Address'
+				
+				if(Instruccion[0] == 'Fin'):
+					print >> sys.stderr, 'Fin'
+
+
 			print >>sys.stderr, 'sending answer back to the client'
 	
 			connection.sendall('process created')
