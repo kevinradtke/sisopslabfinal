@@ -21,6 +21,24 @@ sock.connect(server_address)
 # After the connection is established, data can be sent through the socket with sendall() and received with recv(), just as in
 # the server.
 
+
+#EXPLICACION DE COMANDOS
+
+#Create s p
+#Crea un proceso con pid incremental, con tamaño s y prioridad p
+#	s = size en bytes
+#	p = prioridad
+
+#Address pid v
+#Determina la dirección en memoria real de la dirección virtual v
+#	pid = process id
+#	v = direccion virtual
+
+#Fin pid
+#Mata a proceso con id pid
+#	pid = process id
+
+
 m = ['Politicas Scheduling PrioEx Memory MFU',\
 			'QuantumV 1.000',\
 			'RealMemory 3', \
@@ -58,7 +76,8 @@ try:
 
 	#simulation parameters
 	for i in range(5):
-		print >>sys.stderr, 'client sending "%s"' % m[i]
+		print >> sys.stderr, 'client sending "%s" ' % m[i]
+		print 'AAAA'
 		sock.sendall (m[i])
 		respuesta = sock.recv(256)
 		print >>sys.stderr, 'client received "%s"' % respuesta
