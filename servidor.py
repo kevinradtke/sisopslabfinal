@@ -12,6 +12,9 @@ class Process:
 		self.pid = pid
 		self.size = size
 		self.priority = priority
+		self.initialTime= time.time()
+		self.endTime = -1
+		self.tiempoCPU = 0
 
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -69,8 +72,6 @@ try:
 				PageSize = float(InformacionInicial[1])
 				print >> sys.stderr, PageSize
 
-			if (counter > 4):
-				print (data)
 
 			print >>sys.stderr, 'sending answer back to the client'
 
