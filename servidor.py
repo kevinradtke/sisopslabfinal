@@ -6,6 +6,7 @@ import socket
 import sys
 import time
 from tabulate import tabulate
+from termcolor import colored, cprint
 
 class Process:
 	def __init__(self, pid, size, priority):
@@ -18,6 +19,13 @@ class Process:
 		self.active = True
 		self.pageFaults = 1
 		self.pageVisits = 1
+
+def printline():
+	for i in range(110):
+		if i%2==0:
+			cprint("_",'yellow',attrs=['bold'],end='')
+		else:
+			cprint("_",'red',attrs=['bold'],end='')
 
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -108,10 +116,8 @@ finally:
      # Clean up the connection
 	print >>sys.stderr, 'se fue al finally'
 
-#GLOBAL
-#Tiempo de turnaround promedio y tiempo de espera promedio.
-#visitas a páginas, número de page faults y rendimiento
 
+	#SE CREAN VARIABLES Y TABLAS PARA INSERTAR DATOS
 	tableL = []
 	tableG = []
 	turnaroundSum = 0
@@ -119,6 +125,7 @@ finally:
 	visitasTot = 1
 	pageFaultsTot = 1
 
+	#SE INSERTAN DATOS EN LAS TABLAS
 	for p in processes:
 		if(p != 0):
 			turnaround = p.endTime-p.initialTime
@@ -129,20 +136,27 @@ finally:
 			pageFaultsTot += p.pageFaults
 			tableL.append([p.pid, p.tiempoCPU, turnaround, turnaround-p.tiempoCPU, p.pageVisits, p.pageFaults, 1-p.pageFaults/p.pageVisits])
 
-	print('')
-	print('DATOS LOCALES PARA CADA PROCESO')
+	tableG.append([turnaroundSum/len(processes), tEsperaSum/len(processes),visitasTot, pageFaultsTot, 1-pageFaultsTot/visitasTot])
+
+
+	#TABULA RESULTADOS FINALES
+	printline()
+	cprint('\nDATOS LOCALES PARA CADA PROCESO','blue',attrs=['bold'])
+
 	print tabulate(tableL, headers=["pid","CPU time", "Turnaround", "t. espera", "# de visitas a pag.", "# de page faults", "rendimiento"])
 
-	tableG.append([turnaroundSum/len(processes), tEsperaSum/len(processes),visitasTot, pageFaultsTot, 1-pageFaultsTot/visitasTot])
-	print('')
-	print('DATOS GLOBALES')
+	printline()
+	cprint('\nDATOS GLOBALES','cyan',attrs=['bold'])
+
 	print tabulate(tableG, headers=["Turnaround promedio", "t. espera promedio", "# de visitas a pag.", "# de page faults", "rendimiento"])
+
+	printline()
+	print('\n')
 
 	connection.close()
 
 
 #When communication with a client is finished, the connection needs to be cleaned up using close(). This example uses a try:finally block to ensure that close() is always called, even in the event of an error.
-
 
 def main(args):
     return 0
