@@ -8,6 +8,9 @@ import time
 from tabulate import tabulate
 from termcolor import colored, cprint
 
+# CORRER la siguiente linea para instalar dependencias
+# sudo pip install -r requirements.txt
+
 class Process:
 	def __init__(self, pid, size, priority):
 		self.pid = pid
