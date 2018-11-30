@@ -75,6 +75,7 @@ try:
 	mp = []
 	MaxPriority = -1
 	priorityQueue = []
+	processes = []
 	heapq.heapify(priorityQueue)
 	
     # Receive the data
@@ -157,6 +158,7 @@ try:
 						if(x.inUse == False and p.priority > MaxPriority):
 							MaxPriority = p.priority
 							x.Process = p
+							x.Process.tiempoCPU = x.Process.tiempoCPU + 1 
 							x.inUse = True
 							x.Process.paginas[0] = 1
 							breaked = True
@@ -179,12 +181,26 @@ try:
 					ProcesoACargar = int(Instruccion[1])
 					PaginaACargar = int(Instruccion[2])
 					PaginaACargar = int(PaginaACargar/1024)
+					MarcosLlenos = False
 
+					# Vamos a buscar un espacio vacio en los marcos para agregar la nueva direccion
+					# si el proceso ya esta cargado lo ignoramos, si hay un espacio libre agregamos la
+					# nueva pagina a cargar en el marco, indicando en el array de "paginas[PaginaACargar]"
+					# que esta ya esta siendo procesada.
 					for x in mp:
 						if(x.Process.pid == ProcesoACargar):
 							if(x.Process.paginas[PaginaACargar] == True):
 								print >> sys.stderr, 'El proceso ya se encuentra cargada'
-
+								break
+						if(x.inUse == False):
+							for process in processes:
+								if(process.pid == ProcesoACargar):
+									process.paginas[PaginaACargar] =  1
+									x.Process = process
+									x.inUse = True
+									break
+						MarcosLlenos = True
+					
 					print >> sys.stderr, 'Address'
 
 				if(Instruccion[0] == 'Fin'):
@@ -207,7 +223,6 @@ try:
 						if(x.inUse == True):
 							if(aux < x.Process.priority):
 								aux = x.Process.priority
-					
 					MaxPriority = aux
 
 					# Si un elemento fue borrado tenemos que introducir el siguiente elemento de la
@@ -231,8 +246,9 @@ try:
 					print >> sys.stderr, 'Fin'
 
 			for x in mp:
-				print >> sys.stderr, x.Process.pid, x.Process.paginas
+				print >> sys.stderr, x.Process.pid, x.Process.paginas, 'TIEMPO DE CPU', x.Process.tiempoCPU
 
+			print >> sys.stderr
 			print >>sys.stderr, 'sending answer back to the client'
 
 			connection.sendall('process created')
