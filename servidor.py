@@ -31,6 +31,7 @@ class MarcoPagina:
 			self.size_marcos = size_marcos
 			self.inUse = False
 			self.Process = Process(-1,-1,-1)
+			self.Pagina = -1
 
 def printline():
 	for i in range(110):
@@ -77,6 +78,8 @@ try:
 	priorityQueue = []
 	processes = []
 	heapq.heapify(priorityQueue)
+	mfu = []
+	swapedList = []
 	
     # Receive the data
 	while True:
@@ -150,6 +153,8 @@ try:
 					# Agregamos p a un lista de procesos para accesar a ellos despues
 					processes.append(p)
 
+					# Agregamos a mfu el proceso para llevar control del tiempo de CPU
+
 					# Recorremos todos los marcos de página para ver si existe posibilidad de 
 					# agregar un nuevo proceso o intercambiarlo
 					for x in mp:
@@ -161,13 +166,15 @@ try:
 							x.Process.tiempoCPU = x.Process.tiempoCPU + 1 
 							x.inUse = True
 							x.Process.paginas[0] = 1
+							x.Pagina = 0
 							breaked = True
+							mfu.append(p)
 							break
 					
 					# Si el proceso nunca se puso en algun marco de página (memoria real)
-					# lo guardamos en una colo de prioridades
+					# lo guardamos en una cola de prioridades
 					if(breaked == False):
-						heapq.heappush(priorityQueue,(p.pid, p))
+						heapq.heappush(priorityQueue,(-p.priority,p.pid, p))
 
 					print >> sys.stderr, 'Create'
 
@@ -183,24 +190,55 @@ try:
 					PaginaACargar = int(PaginaACargar/1024)
 					MarcosLlenos = False
 
+					for x in mp:
+						if(x.inUse == True):
+							MarcosLlenos = True
+						if(x.inUse == False):
+							MarcosLlenos = False
+
 					# Vamos a buscar un espacio vacio en los marcos para agregar la nueva direccion
 					# si el proceso ya esta cargado lo ignoramos, si hay un espacio libre agregamos la
 					# nueva pagina a cargar en el marco, indicando en el array de "paginas[PaginaACargar]"
 					# que esta ya esta siendo procesada.
 					for x in mp:
+						# Encontramos la pagina ya cargada, por lo que lo ignoramos
 						if(x.Process.pid == ProcesoACargar):
 							if(x.Process.paginas[PaginaACargar] == True):
 								print >> sys.stderr, 'El proceso ya se encuentra cargada'
 								break
+						# Si tenemos un marco disponible lo agregamos
 						if(x.inUse == False):
 							for process in processes:
 								if(process.pid == ProcesoACargar):
 									process.paginas[PaginaACargar] =  1
+									x.Pagina = PaginaACargar
 									x.Process = process
 									x.inUse = True
 									break
-						MarcosLlenos = True
+						
 					
+					# Si todos los marcos estan llenos, debemos sacar uno de memoria real y pasarlo a 
+					# memoria de swapping
+					if(MarcosLlenos):
+						mfu.sort(key=lambda tiempoCPU: p.tiempoCPU)
+						ProcessToSwap = mfu[0]
+						for x in mp:
+							if(x.Process.pid == ProcessToSwap.pid):
+								swapedList.append(x.Process)
+								x.Process = Process(-1,-1,-1)
+								x.inUse = False
+								for process in processes:
+									if(process.pid == ProcesoACargar):
+										process.paginas[PaginaACargar] =  1
+										x.Pagina = PaginaACargar
+										x.Process = process
+										x.inUse = True
+										break
+
+						# Recorremos todos los marcos para saber cual es el proceso que tiene 
+						# menor tiempo de cpu, pero nos fiajamos por pagina
+
+
 					print >> sys.stderr, 'Address'
 
 				if(Instruccion[0] == 'Fin'):
@@ -212,10 +250,23 @@ try:
 					for x in mp:
 						if(x.Process.pid == ProcesoABorrar):
 							x.Process = Process(-1,-1,-1)
+							x.Pagina = -1
 							x.inUse = False
 							borrado = True
-							break
 					
+					for p in mfu:
+						if(p.pid == ProcesoABorrar):
+							mfu.remove(p)
+
+					auxList = priorityQueue
+					auxValuesList = []
+					for p in auxList:
+						if(p[2].pid != ProcesoABorrar):
+							auxValuesList.append(p)
+					
+					heapq.heapify(auxValuesList)
+					priorityQueue = auxValuesList
+
 					# Tenemos que actualizar la variable para saber cual es el programa con
 					# mayor prioridad en los marcos
 					aux = -1
@@ -225,28 +276,47 @@ try:
 								aux = x.Process.priority
 					MaxPriority = aux
 
+					if(borrado):
+						if(len(swapedList) > 0):
+							p = swapedList[0]
+							swapedList.remove(p)
+							for x in mp:
+								if(x.inUse == False and p.priority > MaxPriority):
+									MaxPriority = p.priority
+									x.Process = p
+									x.Process.tiempoCPU = x.Process.tiempoCPU + 1
+									x.Process.paginas[0] = 1
+									x.Pagina = 0
+									x.inUse = True
+									borrado = False
+									mfu.append(p)
+									break
+
 					# Si un elemento fue borrado tenemos que introducir el siguiente elemento de la
 					# priority queue a los marcos de pagina
 					if(borrado):
 						if(priorityQueue):
 							process = priorityQueue[0]
-						p = process[1]
+						p = process[2]
 						print >> sys.stderr, p.pid
 						for x in mp:
 							if(x.inUse == False and p.priority > MaxPriority):
 								MaxPriority = p.priority
 								x.Process = p
+								x.Process.tiempoCPU = x.Process.tiempoCPU + 1
 								x.Process.paginas[0] = 1
+								x.Pagina = 0
 								x.inUse = True
 								if(priorityQueue):
 									heapq.heappop(priorityQueue)
 								borrado = False
+								mfu.append(p)
 								break
 
 					print >> sys.stderr, 'Fin'
 
 			for x in mp:
-				print >> sys.stderr, x.Process.pid, x.Process.paginas, 'TIEMPO DE CPU', x.Process.tiempoCPU
+				print >> sys.stderr, x.Process.pid, x.Pagina, x.Process.paginas, 'TIEMPO DE CPU', x.Process.tiempoCPU
 
 			print >> sys.stderr
 			print >>sys.stderr, 'sending answer back to the client'
