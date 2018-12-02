@@ -20,7 +20,7 @@ class Process:
 		self.priority = priority
 		self.paginas = []
 		self.initialTime= time.time()
-		self.endTime = -1
+		self.endTime = 0
 		self.tiempoCPU = 0
 		self.active = True
 		self.pageFaults = 1
@@ -80,6 +80,9 @@ try:
 	heapq.heapify(priorityQueue)
 	mfu = []
 	swapedList = []
+	ProcesosTerminados = []
+	InitialTimeProgram = time.time()
+	ProcesoEnCPU = Process(-1,-1,-1)
 	
     # Receive the data
 	while True:
@@ -152,9 +155,7 @@ try:
 
 					# Agregamos p a un lista de procesos para accesar a ellos despues
 					processes.append(p)
-
-					# Agregamos a mfu el proceso para llevar control del tiempo de CPU
-
+					
 					# Recorremos todos los marcos de página para ver si existe posibilidad de 
 					# agregar un nuevo proceso o intercambiarlo
 					for x in mp:
@@ -163,7 +164,10 @@ try:
 						if(x.inUse == False and p.priority > MaxPriority):
 							MaxPriority = p.priority
 							x.Process = p
-							x.Process.tiempoCPU = x.Process.tiempoCPU + 1 
+							ProcesoEnCPU = p.pid
+							x.Process.pageFaults = x.Process.pageFaults + 1
+							x.Process.pageVisits = x.Process.pageVisits + 1 
+							p.tiempoCPU = p.tiempoCPU + 1 
 							x.inUse = True
 							x.Process.paginas[0] = 1
 							x.Pagina = 0
@@ -204,6 +208,9 @@ try:
 						# Encontramos la pagina ya cargada, por lo que lo ignoramos
 						if(x.Process.pid == ProcesoACargar):
 							if(x.Process.paginas[PaginaACargar] == True):
+								x.Process.pageVisits = x.Process.pageVisits + 1 
+								x.Process.tiempoCPU = x.Process.tiempoCPU + 1
+								ProcesoEnCPU = x.Process.pid
 								print >> sys.stderr, 'El proceso ya se encuentra cargada'
 								break
 						# Si tenemos un marco disponible lo agregamos
@@ -211,8 +218,12 @@ try:
 							for process in processes:
 								if(process.pid == ProcesoACargar):
 									process.paginas[PaginaACargar] =  1
-									x.Pagina = PaginaACargar
 									x.Process = process
+									x.Pagina = PaginaACargar
+									process.tiempoCPU = process.tiempoCPU + 1
+									ProcesoEnCPU = process.pid
+									x.Process.pageFaults = x.Process.pageFaults + 1
+									x.Process.pageVisits = x.Process.pageVisits + 1 
 									x.inUse = True
 									break
 						
@@ -227,28 +238,33 @@ try:
 								swapedList.append(x.Process)
 								x.Process = Process(-1,-1,-1)
 								x.inUse = False
+								# Despues de haber sacado el proceso, tenemos que cargar el nuevo proceso
 								for process in processes:
 									if(process.pid == ProcesoACargar):
+										x.Process = process
+										ProcesoEnCPU = process.pid
+										process.tiempoCPU = process.tiempoCPU + 1
 										process.paginas[PaginaACargar] =  1
 										x.Pagina = PaginaACargar
-										x.Process = process
+										x.Process.pageFaults = x.Process.pageFaults + 1
+										x.Process.pageVisits = x.Process.pageVisits + 1 
 										x.inUse = True
 										break
-
-						# Recorremos todos los marcos para saber cual es el proceso que tiene 
-						# menor tiempo de cpu, pero nos fiajamos por pagina
 
 
 					print >> sys.stderr, 'Address'
 
+# ##################################
+
 				if(Instruccion[0] == 'Fin'):
 					# Guardamos el proceso que tenemos que borrar
 					ProcesoABorrar = int(Instruccion[1])
-
+					ProcesosTerminados.append(ProcesoABorrar)
 					# Buscamos entre todos los marcos de pagina el proceso que es 
 					# necesario borrar
 					for x in mp:
 						if(x.Process.pid == ProcesoABorrar):
+							x.Process.endTime = time.time()
 							x.Process = Process(-1,-1,-1)
 							x.Pagina = -1
 							x.inUse = False
@@ -261,6 +277,8 @@ try:
 					auxList = priorityQueue
 					auxValuesList = []
 					for p in auxList:
+						if(p[2].pid == ProcesoABorrar):
+							p[2].endTime = time.time()
 						if(p[2].pid != ProcesoABorrar):
 							auxValuesList.append(p)
 					
@@ -283,9 +301,12 @@ try:
 							for x in mp:
 								if(x.inUse == False and p.priority > MaxPriority):
 									MaxPriority = p.priority
+									ProcesoEnCPU = p.pid
 									x.Process = p
-									x.Process.tiempoCPU = x.Process.tiempoCPU + 1
+									p.tiempoCPU = p.tiempoCPU + 1
 									x.Process.paginas[0] = 1
+									x.Process.pageFaults = x.Process.pageFaults + 1
+									x.Process.pageVisits = x.Process.pageVisits + 1 
 									x.Pagina = 0
 									x.inUse = True
 									borrado = False
@@ -303,7 +324,10 @@ try:
 							if(x.inUse == False and p.priority > MaxPriority):
 								MaxPriority = p.priority
 								x.Process = p
+								ProcesoEnCPU = x.Process.pid
 								x.Process.tiempoCPU = x.Process.tiempoCPU + 1
+								x.Process.pageFaults = x.Process.pageFaults + 1
+								x.Process.pageVisits = x.Process.pageVisits + 1 
 								x.Process.paginas[0] = 1
 								x.Pagina = 0
 								x.inUse = True
@@ -314,6 +338,36 @@ try:
 								break
 
 					print >> sys.stderr, 'Fin'
+			
+				tableH = []
+
+				Comando = Queries
+				timeStamp = time.time() - InitialTimeProgram
+				DirReal = ' '
+				if(Instruccion[0] == 'Address'):
+					DirReal = int(Instruccion[2])
+				ColaListos = []
+				for x in priorityQueue:
+					ColaListos.append(x[2].pid)
+				ProcesoCPU = ProcesoEnCPU
+				Memoria = []
+				for x in mp:
+					Memoria.append((x.Process.pid,x.Pagina))
+				AreaSwapping = []
+				for x in swapedList:
+					AreaSwapping.append(x.pid)
+				procTer = []
+				for x in ProcesosTerminados:
+					procTer.append(x)
+
+
+				tableH.append([Comando, timeStamp, DirReal, ProcesoCPU, ColaListos, Memoria, AreaSwapping, procTer])
+
+				cprint('\nDATOS DE PROCESO','cyan',attrs=['bold'])
+
+				print tabulate(tableH, headers=["Comando", "time Stamp", "Direccion Real", "CPU", "Cola de Listos", "Memoria Real", "Area de Swapping", "Procesos Terminados"])
+				printline()
+				printline()
 
 			for x in mp:
 				print >> sys.stderr, x.Process.pid, x.Pagina, x.Process.paginas, 'TIEMPO DE CPU', x.Process.tiempoCPU
@@ -322,6 +376,7 @@ try:
 			print >>sys.stderr, 'sending answer back to the client'
 
 			connection.sendall('process created')
+
 
 		else:
 			print >>sys.stderr, 'no data from', client_address
@@ -350,9 +405,9 @@ finally:
 			tEsperaSum += tEspera
 			visitasTot += p.pageVisits
 			pageFaultsTot += p.pageFaults
-			tableL.append([p.pid, p.tiempoCPU, turnaround, turnaround-p.tiempoCPU, p.pageVisits, p.pageFaults, 1-p.pageFaults/p.pageVisits])
+			tableL.append([p.pid, p.tiempoCPU, turnaround, turnaround-p.tiempoCPU, p.pageVisits, p.pageFaults, 1-(float(p.pageFaults)/float(p.pageVisits))])
 
-	tableG.append([turnaroundSum/len(processes), tEsperaSum/len(processes),visitasTot, pageFaultsTot, 1-pageFaultsTot/visitasTot])
+	tableG.append([turnaroundSum/len(processes), tEsperaSum/len(processes),visitasTot, pageFaultsTot, 1-(float(pageFaultsTot)/float(visitasTot))])
 
 
 	#TABULA RESULTADOS FINALES
