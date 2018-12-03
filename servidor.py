@@ -34,11 +34,12 @@ class MarcoPagina:
 			self.Pagina = -1
 
 def printline():
-	for i in range(110):
+	for i in range(140):
 		if i%2==0:
 			cprint("_",'yellow',attrs=['bold'],end='')
 		else:
 			cprint("_",'red',attrs=['bold'],end='')
+	print('\n')
 
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -83,7 +84,7 @@ try:
 	ProcesosTerminados = []
 	InitialTimeProgram = time.time()
 	ProcesoEnCPU = Process(-1,-1,-1)
-	
+
     # Receive the data
 	while True:
 		data = connection.recv(256)
@@ -91,7 +92,7 @@ try:
 		if data:
 			# Counter para controlar en que linea vamos
 			counter = counter + 1
-			
+
 			# If para obtener el quantum, segunda linea del objeto data
 			if(counter == 1):
 				InformacionInicial = data.split(' ')
@@ -129,16 +130,16 @@ try:
 				breaked = False
 
 				# Variable para saber si ya salio un proceso. Despues buscamos en la cola
-				# de listos si existe un proceso que pueda accesar	
+				# de listos si existe un proceso que pueda accesar
 				borrado = False
 
 				# Intruccion para crear un nuevo proceso
 				# Nos dan el tamaño del proceso y su prioridad
 				# Al crear los procesos estos son cargados en los marcos de pagina
-				# si existe un marco libre este se carga en esa, pero debe de ser menor 
+				# si existe un marco libre este se carga en esa, pero debe de ser menor
 				# prioridad que las que ya estan cargadas, al cargare una pagina
 				# esta pasa a CPU. Cuando se carga una pagina de un proceso y esta es de mayor
-				# prioridad que las que existe, sacamos la que haya usado mas veces, si existe 
+				# prioridad que las que existe, sacamos la que haya usado mas veces, si existe
 				# empate usamos FIFO, y es cargada en SwapMemory y tambien se agrega a la cola
 				# de listos.
 				if(Instruccion[0] == 'Create'):
@@ -148,15 +149,15 @@ try:
 					for i in range(pagina):
 						numPages.append(0)
 					p = Process(counterPID, int(Instruccion[1]), int(Instruccion[2]))
-					p.paginas = numPages		
+					p.paginas = numPages
 
 					# Aumentamos el PID para tener un control de los procesos
 					counterPID = counterPID + 1
 
 					# Agregamos p a un lista de procesos para accesar a ellos despues
 					processes.append(p)
-					
-					# Recorremos todos los marcos de página para ver si existe posibilidad de 
+
+					# Recorremos todos los marcos de página para ver si existe posibilidad de
 					# agregar un nuevo proceso o intercambiarlo
 					for x in mp:
 						# Checar si el marco de página esta vacio y si el proceso entrante
@@ -166,15 +167,15 @@ try:
 							x.Process = p
 							ProcesoEnCPU = p.pid
 							x.Process.pageFaults = x.Process.pageFaults + 1
-							x.Process.pageVisits = x.Process.pageVisits + 1 
-							p.tiempoCPU = p.tiempoCPU + 1 
+							x.Process.pageVisits = x.Process.pageVisits + 1
+							p.tiempoCPU = p.tiempoCPU + 1
 							x.inUse = True
 							x.Process.paginas[0] = 1
 							x.Pagina = 0
 							breaked = True
 							mfu.append(p)
 							break
-					
+
 					# Si el proceso nunca se puso en algun marco de página (memoria real)
 					# lo guardamos en una cola de prioridades
 					if(breaked == False):
@@ -186,7 +187,7 @@ try:
 # ##################################
 
 
-				# Si recibimos una instruccion de 'Address' tenemos que cargar la pagina que 
+				# Si recibimos una instruccion de 'Address' tenemos que cargar la pagina que
 				# nos dicen a la direccion indicada, si es que es posible
 				if(Instruccion[0] == 'Address'):
 					ProcesoACargar = int(Instruccion[1])
@@ -208,7 +209,7 @@ try:
 						# Encontramos la pagina ya cargada, por lo que lo ignoramos
 						if(x.Process.pid == ProcesoACargar):
 							if(x.Process.paginas[PaginaACargar] == True):
-								x.Process.pageVisits = x.Process.pageVisits + 1 
+								x.Process.pageVisits = x.Process.pageVisits + 1
 								x.Process.tiempoCPU = x.Process.tiempoCPU + 1
 								ProcesoEnCPU = x.Process.pid
 								print >> sys.stderr, 'El proceso ya se encuentra cargada'
@@ -223,12 +224,12 @@ try:
 									process.tiempoCPU = process.tiempoCPU + 1
 									ProcesoEnCPU = process.pid
 									x.Process.pageFaults = x.Process.pageFaults + 1
-									x.Process.pageVisits = x.Process.pageVisits + 1 
+									x.Process.pageVisits = x.Process.pageVisits + 1
 									x.inUse = True
 									break
-						
-					
-					# Si todos los marcos estan llenos, debemos sacar uno de memoria real y pasarlo a 
+
+
+					# Si todos los marcos estan llenos, debemos sacar uno de memoria real y pasarlo a
 					# memoria de swapping
 					if(MarcosLlenos):
 						mfu.sort(key=lambda tiempoCPU: p.tiempoCPU)
@@ -247,7 +248,7 @@ try:
 										process.paginas[PaginaACargar] =  1
 										x.Pagina = PaginaACargar
 										x.Process.pageFaults = x.Process.pageFaults + 1
-										x.Process.pageVisits = x.Process.pageVisits + 1 
+										x.Process.pageVisits = x.Process.pageVisits + 1
 										x.inUse = True
 										break
 
@@ -260,7 +261,7 @@ try:
 					# Guardamos el proceso que tenemos que borrar
 					ProcesoABorrar = int(Instruccion[1])
 					ProcesosTerminados.append(ProcesoABorrar)
-					# Buscamos entre todos los marcos de pagina el proceso que es 
+					# Buscamos entre todos los marcos de pagina el proceso que es
 					# necesario borrar
 					for x in mp:
 						if(x.Process.pid == ProcesoABorrar):
@@ -269,7 +270,7 @@ try:
 							x.Pagina = -1
 							x.inUse = False
 							borrado = True
-					
+
 					for p in mfu:
 						if(p.pid == ProcesoABorrar):
 							mfu.remove(p)
@@ -281,7 +282,7 @@ try:
 							p[2].endTime = time.time()
 						if(p[2].pid != ProcesoABorrar):
 							auxValuesList.append(p)
-					
+
 					heapq.heapify(auxValuesList)
 					priorityQueue = auxValuesList
 
@@ -306,7 +307,7 @@ try:
 									p.tiempoCPU = p.tiempoCPU + 1
 									x.Process.paginas[0] = 1
 									x.Process.pageFaults = x.Process.pageFaults + 1
-									x.Process.pageVisits = x.Process.pageVisits + 1 
+									x.Process.pageVisits = x.Process.pageVisits + 1
 									x.Pagina = 0
 									x.inUse = True
 									borrado = False
@@ -327,7 +328,7 @@ try:
 								ProcesoEnCPU = x.Process.pid
 								x.Process.tiempoCPU = x.Process.tiempoCPU + 1
 								x.Process.pageFaults = x.Process.pageFaults + 1
-								x.Process.pageVisits = x.Process.pageVisits + 1 
+								x.Process.pageVisits = x.Process.pageVisits + 1
 								x.Process.paginas[0] = 1
 								x.Pagina = 0
 								x.inUse = True
@@ -338,7 +339,7 @@ try:
 								break
 
 					print >> sys.stderr, 'Fin'
-			
+
 				tableH = []
 
 				Comando = Queries
@@ -365,8 +366,8 @@ try:
 
 				cprint('\nDATOS DE PROCESO','cyan',attrs=['bold'])
 
-				print tabulate(tableH, headers=["Comando", "time Stamp", "Direccion Real", "CPU", "Cola de Listos", "Memoria Real", "Area de Swapping", "Procesos Terminados"])
 				printline()
+				print tabulate(tableH, headers=["Comando", "time Stamp", "Direccion Real", "CPU", "Cola de Listos", "Memoria Real", "Area de Swapping", "Procesos Terminados"])
 				printline()
 
 			for x in mp:
@@ -412,12 +413,12 @@ finally:
 
 	#TABULA RESULTADOS FINALES
 	printline()
-	cprint('\nDATOS LOCALES PARA CADA PROCESO','blue',attrs=['bold'])
+	cprint('DATOS LOCALES PARA CADA PROCESO','blue',attrs=['bold'])
 
 	print tabulate(tableL, headers=["pid","CPU time", "Turnaround", "t. espera", "# de visitas a pag.", "# de page faults", "rendimiento"])
 
 	printline()
-	cprint('\nDATOS GLOBALES','cyan',attrs=['bold'])
+	cprint('DATOS GLOBALES','cyan',attrs=['bold'])
 
 	print tabulate(tableG, headers=["Turnaround promedio", "t. espera promedio", "# de visitas a pag.", "# de page faults", "rendimiento"])
 
