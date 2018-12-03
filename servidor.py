@@ -13,6 +13,12 @@ from termcolor import colored, cprint
 # CORRER la siguiente linea para instalar dependencias
 # sudo pip install -r requirements.txt
 
+def foo(x,y):
+    try:
+        return float(x)/float(y)
+    except ZeroDivisionError:
+        return 0
+
 class Process:
 	def __init__(self, pid, size, priority):
 		self.pid = pid
@@ -23,8 +29,8 @@ class Process:
 		self.endTime = 0
 		self.tiempoCPU = 0
 		self.active = True
-		self.pageFaults = 1
-		self.pageVisits = 1
+		self.pageFaults = 0
+		self.pageVisits = 0
 
 class MarcoPagina:
 		def __init__(self, size_marcos):
@@ -165,10 +171,10 @@ try:
 						if(x.inUse == False and p.priority > MaxPriority):
 							MaxPriority = p.priority
 							x.Process = p
-							ProcesoEnCPU = p.pid
+							ProcesoEnCPU = x.Process.pid
 							x.Process.pageFaults = x.Process.pageFaults + 1
 							x.Process.pageVisits = x.Process.pageVisits + 1
-							p.tiempoCPU = p.tiempoCPU + 1
+							x.Process.tiempoCPU = x.Process.tiempoCPU + 1
 							x.inUse = True
 							x.Process.paginas[0] = 1
 							x.Pagina = 0
@@ -221,8 +227,8 @@ try:
 									process.paginas[PaginaACargar] =  1
 									x.Process = process
 									x.Pagina = PaginaACargar
-									process.tiempoCPU = process.tiempoCPU + 1
-									ProcesoEnCPU = process.pid
+									x.Process.tiempoCPU = x.Process.tiempoCPU + 1
+									ProcesoEnCPU = x.Process.pid
 									x.Process.pageFaults = x.Process.pageFaults + 1
 									x.Process.pageVisits = x.Process.pageVisits + 1
 									x.inUse = True
@@ -232,6 +238,7 @@ try:
 					# Si todos los marcos estan llenos, debemos sacar uno de memoria real y pasarlo a
 					# memoria de swapping
 					if(MarcosLlenos):
+						print >> sys.stderr, mfu
 						mfu.sort(key=lambda tiempoCPU: p.tiempoCPU)
 						ProcessToSwap = mfu[0]
 						for x in mp:
@@ -243,8 +250,8 @@ try:
 								for process in processes:
 									if(process.pid == ProcesoACargar):
 										x.Process = process
-										ProcesoEnCPU = process.pid
-										process.tiempoCPU = process.tiempoCPU + 1
+										ProcesoEnCPU = x.Process.pid
+										x.Process.tiempoCPU = x.Process.tiempoCPU + 1
 										process.paginas[PaginaACargar] =  1
 										x.Pagina = PaginaACargar
 										x.Process.pageFaults = x.Process.pageFaults + 1
@@ -302,9 +309,9 @@ try:
 							for x in mp:
 								if(x.inUse == False and p.priority > MaxPriority):
 									MaxPriority = p.priority
-									ProcesoEnCPU = p.pid
 									x.Process = p
-									p.tiempoCPU = p.tiempoCPU + 1
+									ProcesoEnCPU = x.Process.pid
+									x.Process.tiempoCPU = x.Process.tiempoCPU + 1
 									x.Process.paginas[0] = 1
 									x.Process.pageFaults = x.Process.pageFaults + 1
 									x.Process.pageVisits = x.Process.pageVisits + 1
@@ -370,9 +377,6 @@ try:
 				print tabulate(tableH, headers=["Comando", "time Stamp", "Direccion Real", "CPU", "Cola de Listos", "Memoria Real", "Area de Swapping", "Procesos Terminados"])
 				printline()
 
-			for x in mp:
-				print >> sys.stderr, x.Process.pid, x.Pagina, x.Process.paginas, 'TIEMPO DE CPU', x.Process.tiempoCPU
-
 			print >> sys.stderr
 			print >>sys.stderr, 'sending answer back to the client'
 
@@ -406,9 +410,9 @@ finally:
 			tEsperaSum += tEspera
 			visitasTot += p.pageVisits
 			pageFaultsTot += p.pageFaults
-			tableL.append([p.pid, p.tiempoCPU, turnaround, turnaround-p.tiempoCPU, p.pageVisits, p.pageFaults, 1-(float(p.pageFaults)/float(p.pageVisits))])
+			tableL.append([p.pid, p.tiempoCPU, turnaround, turnaround-p.tiempoCPU, p.pageVisits, p.pageFaults, 1-(foo(p.pageFaults,p.pageVisits))])
 
-	tableG.append([turnaroundSum/len(processes), tEsperaSum/len(processes),visitasTot, pageFaultsTot, 1-(float(pageFaultsTot)/float(visitasTot))])
+	tableG.append([turnaroundSum/len(processes), tEsperaSum/len(processes),visitasTot, pageFaultsTot, 1-(foo(pageFaultsTot,visitasTot))])
 
 
 	#TABULA RESULTADOS FINALES
