@@ -99,6 +99,8 @@ try:
 			# Counter para controlar en que linea vamos
 			counter = counter + 1
 
+			InitialInstructionTime = time.time()
+
 			# If para obtener el quantum, segunda linea del objeto data
 			if(counter == 1):
 				InformacionInicial = data.split(' ')
@@ -174,7 +176,6 @@ try:
 							ProcesoEnCPU = x.Process.pid
 							x.Process.pageFaults = x.Process.pageFaults + 1
 							x.Process.pageVisits = x.Process.pageVisits + 1
-							x.Process.tiempoCPU = x.Process.tiempoCPU + 1
 							x.inUse = True
 							x.Process.paginas[0] = 1
 							x.Pagina = 0
@@ -216,7 +217,6 @@ try:
 						if(x.Process.pid == ProcesoACargar):
 							if(x.Process.paginas[PaginaACargar] == True):
 								x.Process.pageVisits = x.Process.pageVisits + 1
-								x.Process.tiempoCPU = x.Process.tiempoCPU + 1
 								ProcesoEnCPU = x.Process.pid
 								print >> sys.stderr, 'El proceso ya se encuentra cargada'
 								break
@@ -227,7 +227,6 @@ try:
 									process.paginas[PaginaACargar] =  1
 									x.Process = process
 									x.Pagina = PaginaACargar
-									x.Process.tiempoCPU = x.Process.tiempoCPU + 1
 									ProcesoEnCPU = x.Process.pid
 									x.Process.pageFaults = x.Process.pageFaults + 1
 									x.Process.pageVisits = x.Process.pageVisits + 1
@@ -238,7 +237,6 @@ try:
 					# Si todos los marcos estan llenos, debemos sacar uno de memoria real y pasarlo a
 					# memoria de swapping
 					if(MarcosLlenos):
-						print >> sys.stderr, mfu
 						mfu.sort(key=lambda tiempoCPU: p.tiempoCPU)
 						ProcessToSwap = mfu[0]
 						for x in mp:
@@ -251,7 +249,6 @@ try:
 									if(process.pid == ProcesoACargar):
 										x.Process = process
 										ProcesoEnCPU = x.Process.pid
-										x.Process.tiempoCPU = x.Process.tiempoCPU + 1
 										process.paginas[PaginaACargar] =  1
 										x.Pagina = PaginaACargar
 										x.Process.pageFaults = x.Process.pageFaults + 1
@@ -278,6 +275,7 @@ try:
 							x.inUse = False
 							borrado = True
 
+					
 					for p in mfu:
 						if(p.pid == ProcesoABorrar):
 							mfu.remove(p)
@@ -311,7 +309,6 @@ try:
 									MaxPriority = p.priority
 									x.Process = p
 									ProcesoEnCPU = x.Process.pid
-									x.Process.tiempoCPU = x.Process.tiempoCPU + 1
 									x.Process.paginas[0] = 1
 									x.Process.pageFaults = x.Process.pageFaults + 1
 									x.Process.pageVisits = x.Process.pageVisits + 1
@@ -327,13 +324,11 @@ try:
 						if(priorityQueue):
 							process = priorityQueue[0]
 						p = process[2]
-						print >> sys.stderr, p.pid
-						for x in mp:
-							if(x.inUse == False and p.priority > MaxPriority):
+						for x in mp:								
+							if(x.inUse == False and p.priority > MaxPriority and p.pid not in ProcesosTerminados):
 								MaxPriority = p.priority
 								x.Process = p
 								ProcesoEnCPU = x.Process.pid
-								x.Process.tiempoCPU = x.Process.tiempoCPU + 1
 								x.Process.pageFaults = x.Process.pageFaults + 1
 								x.Process.pageVisits = x.Process.pageVisits + 1
 								x.Process.paginas[0] = 1
@@ -349,6 +344,12 @@ try:
 
 				tableH = []
 
+				InitialInstructionTime = time.time() - InitialInstructionTime
+
+				for x in processes:
+					if(ProcesoEnCPU == x.pid):
+						x.tiempoCPU = x.tiempoCPU + InitialInstructionTime
+
 				Comando = Queries
 				timeStamp = time.time() - InitialTimeProgram
 				DirReal = ' '
@@ -357,7 +358,10 @@ try:
 				ColaListos = []
 				for x in priorityQueue:
 					ColaListos.append(x[2].pid)
-				ProcesoCPU = ProcesoEnCPU
+				if(ProcesoEnCPU in ProcesosTerminados):
+					ProcesoCPU = -1
+				else:
+					ProcesoCPU = ProcesoEnCPU
 				Memoria = []
 				for x in mp:
 					Memoria.append((x.Process.pid,x.Pagina))
@@ -404,6 +408,7 @@ finally:
 	#SE INSERTAN DATOS EN LAS TABLAS
 	for p in processes:
 		if(p != 0):
+			p.tiempoCPU = p.tiempoCPU
 			turnaround = p.endTime-p.initialTime
 			tEspera = turnaround - p.tiempoCPU
 			turnaroundSum += turnaround
@@ -428,7 +433,6 @@ finally:
 
 	printline()
 	print('\n')
-
 	connection.close()
 
 
